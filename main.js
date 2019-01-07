@@ -8,28 +8,37 @@ var app = http.createServer(function(request, response) {
   var title = queryData.id;
 
   if (_url == '/') {
-    _url = '/index.html';
+    title = 'Welcome';
   }
   if (_url == '/favicon.ico') {
     response.writeHead(404);
-    response.end();
-    return;
   }
-  response.writeHead(200);
-  var template = `
-  <!DOCTYPE html>
-  <html lang="en" dir="ltr">
-    <head>
-      <meta charset="utf-8">
-      <title>${title} Page</title>
-    </head>
-    <body>
-      <h1>${title} Pages 입니다.</h1>
 
-    </body>
-  </html>
-  `;
-  response.end(template);
+  response.writeHead(200);
+  fs.readFile(`data/${queryData.id}`, 'utf8',
+  function(err,description){
+    var template = `
+    <!DOCTYPE html>
+    <html lang="en" dir="ltr">
+      <head>
+        <meta charset="utf-8">
+        <title>Web1 - ${title} Page</title>
+        <meta charset="utf-8">
+      </head>
+      <body>
+        <h1><a href="/">Web</a></h1>
+        <ul>
+          <li><a href="/?id=HTML">HTML</a></li>
+          <li><a href="/?id=CSS">CSS</a></li>
+          <li><a href="/?id=JavaScript">JavaScript</a></li>
+        </ul>
+        <h2>${title}</h2>
+        <p>${description}</p>
+      </body>
+    </html>
+    `;
+    response.end(template);
+  });
 
 });
 app.listen(3000);
