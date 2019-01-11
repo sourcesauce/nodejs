@@ -49,7 +49,7 @@ var app = http.createServer(function(request, response) {
 
         var list = templateList(filelist);
         var template = templateHTML(title, list,
-          `<h2>${title}</h2>${description}`,``);
+          `<h2>${title}</h2>${description}`, ``);
 
         response.writeHead(200);
         response.end(template);
@@ -103,13 +103,15 @@ var app = http.createServer(function(request, response) {
       var post = qs.parse(body);
       var title = post.title;
       var description = post.description;
-      fs.writeFile(`data/${title}`, description, 'utf8',function(err){
-        response.writeHead(302,{Location:`/?id=${title}`});
+      fs.writeFile(`data/${title}`, description, 'utf8', function(err) {
+        response.writeHead(302, {
+          Location: `/?id=${title}`
+        });
         response.end('Success');
       })
     });
 
-  } else if(pathname==='/update'){
+  } else if (pathname === '/update') {
     fs.readdir('./data', function(error, filelist) {
 
       fs.readFile(`data/${queryData.id}`, 'utf8',
@@ -126,15 +128,34 @@ var app = http.createServer(function(request, response) {
               <p>
                 <input type="submit">
               </p>
-            </form>`
-            ,``
+            </form>`, ``
           );
 
           response.writeHead(200);
           response.end(template);
         });
     })
-  }else {
+  } else if (pathname === '/update_process') {
+    var body = '';
+    request.on('data', function(data) {
+      body += data;
+    });
+    request.on('end', function() {
+      var post = qs.parse(body);
+      var id = post.id;
+      var title = post.title;
+      var description = post.description;
+      fs.rename(`data/${id}`, `data/${title}`, function(error) {
+        fs.writeFile(`data/${title}`, description, 'utf8', function(err) {
+          response.writeHead(302, {
+            Location: `/?id=${title}`
+          });
+          response.end('Success');
+        })
+      });
+
+    });
+  } else {
     response.writeHead(404);
     response.end('Not found');
   }
