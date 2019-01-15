@@ -107,23 +107,30 @@ var app = http.createServer(function(request, response) {
     });
 
   } else if (pathname === '/update') {
-    fs.readdir('./data', function(error, filelist) {
-      var filteredId = path.parse(queryData.id).base;
-      fs.readFile(`data/${filteredId}`, 'utf8',
-        function(err, description) {
-          var title = queryData.id;
-          var list = template.list(filelist);
-          var html = template.html(title, list,
+    connection.query(`SELECT * FROM topic`, function(error, topics) {
+      if(error){
+        throw error;
+      }
+      connection.query(`SELECT * FROM topic WHERE id=?`, [queryData.id], function(error2, topic) {
+        if(error){
+          throw error;
+        }
+
+          var list = template.list(topics);
+          var html = template.html(topic[0].title, list,
             `<form action="/update_process" method="post">
-              <input type="hidden" name="id" value="${title}">
-              <p><input type="text" name="title" placeholder="제목" value="${title}"></p>
+              <input type="hidden" name="id" value="${topic[0].id}">
+              <p><input type="text" name="title" placeholder="제목" value="${topic[0].title}"></p>
               <p>
-                <textarea name="description" placeholder="내용">${description}</textarea>
+                <textarea name="description" placeholder="내용">${topic[0].description}</textarea>
               </p>
               <p>
                 <input type="submit">
               </p>
-            </form>`, ``
+            </form>`,
+            `<a href="/create">create</a>
+              <a href="/update?id=${topic[0].id}">update</a>
+            `
           );
 
           response.writeHead(200);
@@ -137,16 +144,12 @@ var app = http.createServer(function(request, response) {
     });
     request.on('end', function() {
       var post = qs.parse(body);
-      var id = post.id;
-      var title = post.title;
-      var description = post.description;
-      fs.rename(`data/${id}`, `data/${title}`, function(error) {
-        fs.writeFile(`data/${title}`, description, 'utf8', function(err) {
-          response.writeHead(302, {
-            Location: `/?id=${title}`
-          });
-          response.end('Success');
-        })
+
+      connection.query('UPDATE topic SET title=?, description=?, author_id=1 WHERE id=?' ,[post.title,post.description,post.id],function(error,result){
+        response.writeHead(302, {
+          Location: `/?id=${post.id}`
+        });
+        response.end();
       });
 
     });
@@ -159,6 +162,15 @@ var app = http.createServer(function(request, response) {
       var post = qs.parse(body);
       var id = post.id;
       var filteredId = path.parse(id).base;
+      connection.query('DELETE FROM topic WHERE id=?',[post.id],function(error,result){
+        if(error){
+          throw error;
+        }
+        response.writeHead(302, {
+          Location: `/`
+        });
+        response.end();
+      })
       fs.unlink(`data/${filteredId}`, function(error) {
         response.writeHead(302, {
           Location: `/`
