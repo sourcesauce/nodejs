@@ -40,7 +40,7 @@ var app = http.createServer(function(request, response) {
         if (error) {
           throw error;
         }
-        connection.query(`SELECT * FROM topic WHERE id=?`,[queryData.id], function(error2, topic) {
+        connection.query(`SELECT * FROM topic WHERE id=?`, [queryData.id], function(error2, topic) {
           if (error) {
             throw error2;
           }
@@ -55,7 +55,7 @@ var app = http.createServer(function(request, response) {
                 <input type="hidden" name="id" value="${queryData.id}">
                 <input type="submit" value="delete">
               </form>`
-            );
+          );
           response.writeHead(200);
           response.end(html);
         });
@@ -63,12 +63,12 @@ var app = http.createServer(function(request, response) {
       });
     }
   } else if (pathname === '/create') {
-    fs.readdir('./data', function(error, filelist) {
-      var title = 'Web - create';
 
-      var list = template.list(filelist);
-      var html = template.html(title, list, `
-        <form action="/create_process" method="post">
+    connection.query(`SELECT * FROM topic`, function(error, topics) {
+      var title = 'Create';
+      var list = template.list(topics);
+      var html = template.html(title, list,
+        `<form action="/create_process" method="post">
           <p><input type="text" name="title" placeholder="제목"></p>
           <p>
             <textarea name="description" placeholder="내용"></textarea>
@@ -78,11 +78,11 @@ var app = http.createServer(function(request, response) {
           </p>
         </form>
         `,
-        `<a href="/create">create</a> <a href="/update?id=${title}">update</a>`);
-
+        `<a href="/create">create</a> <a href="/update?id=${title}">update</a>`,
+        `<a href="/create">create</a>`);
       response.writeHead(200);
       response.end(html);
-    })
+    });
   } else if (pathname === '/create_process') {
     var body = '';
     request.on('data', function(data) {
@@ -90,14 +90,20 @@ var app = http.createServer(function(request, response) {
     });
     request.on('end', function() {
       var post = qs.parse(body);
-      var title = post.title;
-      var description = post.description;
-      fs.writeFile(`data/${title}`, description, 'utf8', function(err) {
-        response.writeHead(302, {
-          Location: `/?id=${title}`
-        });
-        response.end('Success');
-      })
+      connection.query(`
+        INSERT INTO topic (title,description,created,author_id)
+          VALUES(?,?,NOW(),?)`,
+        [post.title,post.description,1],
+        function(error,result){
+          if(error){
+            throw error;
+          }
+          response.writeHead(302, {
+            Location: `/?id=${result.insertId}`
+          });
+          response.end();
+        }
+      )
     });
 
   } else if (pathname === '/update') {
