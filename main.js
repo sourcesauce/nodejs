@@ -68,23 +68,29 @@ var app = http.createServer(function(request, response) {
   } else if (pathname === '/create') {
 
     connection.query(`SELECT * FROM topic`, function(error, topics) {
-      var title = 'Create';
-      var list = template.list(topics);
-      var html = template.html(title, list,
-        `<form action="/create_process" method="post">
-          <p><input type="text" name="title" placeholder="제목"></p>
-          <p>
-            <textarea name="description" placeholder="내용"></textarea>
-          </p>
-          <p>
-            <input type="submit">
-          </p>
-        </form>
-        `,
-        `<a href="/create">create</a> <a href="/update?id=${title}">update</a>`,
-        `<a href="/create">create</a>`);
-      response.writeHead(200);
-      response.end(html);
+      connection.query(`SELECT * FROM author`, function(error, authors) {
+
+        var title = 'Create';
+        var list = template.list(topics);
+        var html = template.html(title, list,
+          `<form action="/create_process" method="post">
+            <p><input type="text" name="title" placeholder="제목"></p>
+            <p>
+              <textarea name="description" placeholder="내용"></textarea>
+            </p>
+            <p>
+              ${template.authorSelect(authors)}
+            </p>
+            <p>
+              <input type="submit">
+            </p>
+          </form>
+          `,
+          `<a href="/create">create</a> <a href="/update?id=${title}">update</a>`,
+          `<a href="/create">create</a>`);
+        response.writeHead(200);
+        response.end(html);
+      });
     });
   } else if (pathname === '/create_process') {
     var body = '';
@@ -96,9 +102,9 @@ var app = http.createServer(function(request, response) {
       connection.query(`
         INSERT INTO topic (title,description,created,author_id)
           VALUES(?,?,NOW(),?)`,
-        [post.title,post.description,1],
-        function(error,result){
-          if(error){
+        [post.title, post.description, post.author],
+        function(error, result) {
+          if (error) {
             throw error;
           }
           response.writeHead(302, {
@@ -111,14 +117,14 @@ var app = http.createServer(function(request, response) {
 
   } else if (pathname === '/update') {
     connection.query(`SELECT * FROM topic`, function(error, topics) {
-      if(error){
+      if (error) {
         throw error;
       }
       connection.query(`SELECT * FROM topic WHERE id=?`, [queryData.id], function(error2, topic) {
-        if(error){
+        if (error) {
           throw error;
         }
-
+        connection.query(`SELECT * FROM author`, function(error, authors) {
           var list = template.list(topics);
           var html = template.html(topic[0].title, list,
             `<form action="/update_process" method="post">
@@ -126,6 +132,9 @@ var app = http.createServer(function(request, response) {
               <p><input type="text" name="title" placeholder="제목" value="${topic[0].title}"></p>
               <p>
                 <textarea name="description" placeholder="내용">${topic[0].description}</textarea>
+              </p>
+              <p>
+                ${template.authorSelect(authors, topic[0].author_id)}
               </p>
               <p>
                 <input type="submit">
@@ -139,6 +148,8 @@ var app = http.createServer(function(request, response) {
           response.writeHead(200);
           response.end(html);
         });
+
+      });
     })
   } else if (pathname === '/update_process') {
     var body = '';
@@ -148,7 +159,7 @@ var app = http.createServer(function(request, response) {
     request.on('end', function() {
       var post = qs.parse(body);
 
-      connection.query('UPDATE topic SET title=?, description=?, author_id=1 WHERE id=?' ,[post.title,post.description,post.id],function(error,result){
+      connection.query('UPDATE topic SET title=?, description=?, author_id=? WHERE id=?', [post.title, post.description, post.author, post.id], function(error, result) {
         response.writeHead(302, {
           Location: `/?id=${post.id}`
         });
@@ -165,8 +176,8 @@ var app = http.createServer(function(request, response) {
       var post = qs.parse(body);
       var id = post.id;
       var filteredId = path.parse(id).base;
-      connection.query('DELETE FROM topic WHERE id=?',[post.id],function(error,result){
-        if(error){
+      connection.query('DELETE FROM topic WHERE id=?', [post.id], function(error, result) {
+        if (error) {
           throw error;
         }
         response.writeHead(302, {
