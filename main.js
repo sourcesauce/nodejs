@@ -5,7 +5,7 @@ var qs = require('querystring');
 var template = require('./lib/template.js');
 var connection = require('./lib/db.js');
 var topic = require('./lib/topic.js');
-
+var author =require('./lib/author.js')
 var app = http.createServer(function(request, response) {
   var _url = request.url;
   var queryData = url.parse(_url, true).query;
@@ -27,6 +27,8 @@ var app = http.createServer(function(request, response) {
     topic.update_process(request,response);
   } else if (pathname === '/delete_process') {
     topic.delete_process(request,response);
+  } else if('/author'){
+    author.home(request,response);
   } else {
     response.writeHead(404);
     response.end('Not found');
