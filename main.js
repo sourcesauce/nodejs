@@ -1,9 +1,6 @@
 var http = require('http');
 var fs = require('fs');
 var url = require('url');
-var qs = require('querystring');
-var template = require('./lib/template.js');
-var connection = require('./lib/db.js');
 var topic = require('./lib/topic.js');
 var author = require('./lib/author.js')
 var app = http.createServer(function(request, response) {
